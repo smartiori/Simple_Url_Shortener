@@ -66,4 +66,31 @@ MIT License. 可自由使用、修改和部署。
 ## 🙌 感谢
 
 项目灵感来自日常中对轻量短链服务的需求，欢迎 PR 与建议！
+
+
+## 🐳 使用 Docker 部署
+你可以使用 Docker 快速构建并运行该应用：​
+
+🛠️ 构建镜像
+在项目根目录下执行以下命令：​
+
+```bash
+docker build -t flaskshorty .
+```
+
+🚀 运行容器
+构建完成后，运行以下命令启动容器：​
+
+```bash
+docker run -d -p 5000:5000 --name flaskshorty flaskshorty
+```
+应用将运行在 http://localhost:5000/
+你可以在浏览器中访问该地址来使用短链接服务。​
+
+🧹 停止并删除容器
+如需停止并删除容器，可执行以下命令：​
+
+```bash
+docker stop flaskshorty
+docker rm flaskshorty
 ```
