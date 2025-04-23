@@ -18,8 +18,7 @@ A lightweight, self-hosted URL shortening service built with Flask and SQLite. G
 
 1. **Clone the repository**
    ```bash
-   git clone https://github.com/<your-username>/simple-url-shortener.git
-   cd simple-url-shortener
+   git clone https://github.com/smartiori/Simple_Url_Shortener.git
    ```
 2. **Create a virtual environment** (optional but recommended)
    ```bash
