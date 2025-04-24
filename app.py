@@ -9,55 +9,67 @@ DATABASE = 'urls.db'
 # HTML templates
 INDEX_HTML = '''
 <!doctype html>
-<html lang="en">
-  <head>
-    <meta charset="utf-8">
-    <title>FlaskShorty - URL Shortener</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-  </head>
-  <body class="bg-light">
-    <div class="container py-5">
-      <div class="card shadow-sm">
-        <div class="card-body">
-          <h1 class="card-title">🔗 FlaskShorty</h1>
-          <p class="card-text">Enter a URL below to shorten it:</p>
-          <form method="post" class="row g-3">
-            <div class="col-md-9">
-              <input type="text" name="url" class="form-control" placeholder="Enter the URL to shorten" required>
-            </div>
-            <div class="col-md-3">
-              <button type="submit" class="btn btn-primary w-100">Shorten</button>
-            </div>
-          </form>
-          {% if short_url %}
-          <div class="alert alert-success mt-4">
-            Short URL: <a href="{{ short_url }}" target="_blank">{{ short_url }}</a>
-          </div>
-          {% endif %}
-        </div>
-      </div>
+<html>
+<head>
+    <title>URL Shortener</title>
+    <style>
+        body { font-family: Arial; max-width: 800px; margin: auto; padding: 2rem; }
+        input[type=text] { padding: 0.5rem; width: 60%; }
+        input[type=submit], button { padding: 0.5rem 1rem; margin-left: 0.5rem; }
+        canvas { margin-top: 30px; }
+    </style>
+</head>
+<body>
+<h1>🔗 Shorten a URL</h1>
+<form method=post>
+  <input type=text name=url placeholder="Enter the URL to shorten" required>
+  <input type=submit value=Shorten>
+  <a href="{{ url_for('view_table') }}"><button type="button">📊 View Data Table</button></a>
+</form>
 
-      <div class="mt-4 d-flex justify-content-between align-items-center">
-        <h2>📜 All Shortened URLs</h2>
-        <a href="{{ url_for('show_table') }}" target="_blank" class="btn btn-outline-secondary">View Table</a>
-      </div>
+{% if short_url %}
+<p>✅ Short URL: <a href="{{ short_url }}">{{ short_url }}</a></p>
+{% endif %}
 
-      <ul class="list-group mt-2">
-        {% for orig, code, visits in entries %}
-        <li class="list-group-item d-flex justify-content-between align-items-center">
-          <div>
-            <a href="{{ orig }}" target="_blank">{{ orig }}</a>
-            → <a href="{{ request.host_url }}{{ code }}" target="_blank">{{ code }}</a>
-          </div>
-          <span class="badge bg-info text-dark">{{ visits }} visits</span>
-        </li>
-        {% endfor %}
-      </ul>
-    </div>
-  </body>
+<hr>
+<h2>📈 Top URLs by Clicks</h2>
+<canvas id="chart" width="600" height="300"></canvas>
+
+<h2>🔍 All URLs</h2>
+<ul>
+{% for orig, code, visits in entries %}
+  <li><a href="{{ orig }}">{{ orig }}</a> → 
+      <a href="{{ request.host_url }}{{ code }}">{{ code }}</a> 
+      ({{ visits }} visits)</li>
+{% endfor %}
+</ul>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+const ctx = document.getElementById('chart').getContext('2d');
+const chart = new Chart(ctx, {
+    type: 'bar',
+    data: {
+        labels: {{ labels|safe }},
+        datasets: [{
+            label: 'Visits',
+            data: {{ data|safe }},
+            backgroundColor: 'rgba(54, 162, 235, 0.6)'
+        }]
+    },
+    options: {
+        plugins: {
+            legend: { display: false }
+        },
+        scales: {
+            y: { beginAtZero: true }
+        }
+    }
+});
+</script>
+</body>
 </html>
 '''
-
 
 # Database helper
 
@@ -99,8 +111,6 @@ def index():
     if request.method == 'POST':
         original = request.form['url']
         cursor = db.cursor()
-
-        # Check if URL already exists
         row = cursor.execute('SELECT code FROM urls WHERE original_url = ?', (original,)).fetchone()
         if row:
             code = row['code']
@@ -112,9 +122,14 @@ def index():
             db.commit()
         short_url = url_for('redirect_short', code=code, _external=True)
 
-    # fetch all entries
     entries = db.execute('SELECT original_url, code, visits FROM urls ORDER BY id DESC').fetchall()
-    return render_template_string(INDEX_HTML, short_url=short_url, entries=entries)
+    top_entries = db.execute('SELECT code, visits FROM urls ORDER BY visits DESC LIMIT 5').fetchall()
+    labels = [row['code'] for row in top_entries]
+    data = [row['visits'] for row in top_entries]
+
+    return render_template_string(INDEX_HTML, short_url=short_url, entries=entries,
+                                  labels=labels, data=data)
+
 
 @app.route('/<code>')
 def redirect_short(code):
