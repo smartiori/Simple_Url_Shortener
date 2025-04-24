@@ -24,7 +24,7 @@ INDEX_HTML = '''
 <form method=post>
   <input type=text name=url placeholder="Enter the URL to shorten" required>
   <input type=submit value=Shorten>
-  <a href="{{ url_for('view_table') }}"><button type="button">📊 View Data Table</button></a>
+  <a href="{{ url_for('show_table') }}"><button type="button">📊 View Data Table</button></a>
 </form>
 
 {% if short_url %}
@@ -35,14 +35,26 @@ INDEX_HTML = '''
 <h2>📈 Top URLs by Clicks</h2>
 <canvas id="chart" width="600" height="300"></canvas>
 
-<h2>🔍 All URLs</h2>
-<ul>
-{% for orig, code, visits in entries %}
-  <li><a href="{{ orig }}">{{ orig }}</a> → 
-      <a href="{{ request.host_url }}{{ code }}">{{ code }}</a> 
-      ({{ visits }} visits)</li>
-{% endfor %}
-</ul>
+<h2>📄 All Shortened URLs</h2>
+<table border="1" cellpadding="8" cellspacing="0" style="border-collapse: collapse; width: 100%;">
+  <thead style="background-color: #f0f0f0;">
+    <tr>
+      <th style="text-align: left;">Original URL</th>
+      <th style="text-align: left;">Short Code</th>
+      <th style="text-align: right;">Visits</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for orig, code, visits in entries %}
+    <tr>
+      <td><a href="{{ orig }}" target="_blank">{{ orig }}</a></td>
+      <td><a href="{{ request.host_url }}{{ code }}" target="_blank">{{ code }}</a></td>
+      <td style="text-align: right;">{{ visits }}</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
