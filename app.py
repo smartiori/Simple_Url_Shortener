@@ -98,14 +98,20 @@ def index():
     short_url = None
     if request.method == 'POST':
         original = request.form['url']
-        code = generate_code()
         cursor = db.cursor()
-        # ensure uniqueness
-        while cursor.execute('SELECT * FROM urls WHERE code = ?', (code,)).fetchone():
+
+        # Check if URL already exists
+        row = cursor.execute('SELECT code FROM urls WHERE original_url = ?', (original,)).fetchone()
+        if row:
+            code = row['code']
+        else:
             code = generate_code()
-        cursor.execute('INSERT INTO urls (code, original_url) VALUES (?, ?)', (code, original))
-        db.commit()
+            while cursor.execute('SELECT * FROM urls WHERE code = ?', (code,)).fetchone():
+                code = generate_code()
+            cursor.execute('INSERT INTO urls (code, original_url) VALUES (?, ?)', (code, original))
+            db.commit()
         short_url = url_for('redirect_short', code=code, _external=True)
+
     # fetch all entries
     entries = db.execute('SELECT original_url, code, visits FROM urls ORDER BY id DESC').fetchall()
     return render_template_string(INDEX_HTML, short_url=short_url, entries=entries)
