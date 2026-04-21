@@ -1,20 +1,26 @@
-# 使用官方 Python 运行时作为父镜像
-FROM python:3.10-slim
+FROM python:3.9-slim
 
-# 设置工作目录
+LABEL maintainer="ShortURL Service"
+LABEL description="Flask based URL Shortener Service"
+
+ENV PYTHONUNBUFFERED=1
+ENV FLASK_APP=app.py
+ENV FLASK_ENV=production
+
 WORKDIR /app
 
-# 复制依赖清单并安装
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends gcc && \
+    rm -rf /var/lib/apt/lists/*
 
-# 复制应用代码
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt && \
+    pip install --no-cache-dir gunicorn
+
 COPY . .
 
-# 暴露应用运行端口
+RUN mkdir -p /app/data
+
 EXPOSE 5000
 
-# 使用环境变量指定 Flask 应用并启动
-ENV FLASK_APP=app.py
-ENV FLASK_RUN_HOST=0.0.0.0
-CMD ["flask", "run"]
+CMD ["sh", "-c", "python -c \"from app import init_db; init_db()\" && exec gunicorn --bind 0.0.0.0:5000 --workers 2 --threads 4 app:app"]
